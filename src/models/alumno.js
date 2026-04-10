@@ -1,4 +1,4 @@
-export class alumno{
+export default class alumno{
 
     constructor  (username,DNI,edad){
 

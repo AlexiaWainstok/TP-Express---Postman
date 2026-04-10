@@ -6,16 +6,13 @@ import {sumar, restar, multiplicar, dividir} from "./modules/matematica.js"
 import {OMDBSearchByPage, OMDBSearchComplete, OMDBGetByImdbID} from "./modules/omdb-wrapper.js"
 
 const app  = express();
-const port = 3000;              // El puerto 3000 (http://localhost:3000)
+const port = 3000;             
 
-// Agrego los Middlewares
 
-app.use(cors());         // Middleware de CORS
-app.use(express.json()); // Middleware para parsear y comprender JSON
+app.use(cors());         
+app.use(express.json()); 
 
-//
-// Aca pongo todos los EndPoints
-//
+
 app.get('/', (req, res) => {
     res.status(200).send('¡Ya estoy respondiendo!');
 });
@@ -23,6 +20,7 @@ app.get('/', (req, res) => {
 app.get('/saludar/:nombre', (req, res) => {
     const nombre = req.params.nombre;
     res.status(200).send(`Hola ${nombre}`);
+    console.log("lesan")
 });
 
 
@@ -38,7 +36,7 @@ app.get('/validarfecha/:ano/:mes/:dia', (req, res) => {
     res.status(200).send("Fecha válida");
 });
 
-//matematica//
+
 app.get('/matematica/sumar', (req, res) => {
     const { n1, n2 } = req.query;
     res.status(200).send({ resultado: sumar(Number(n1), Number(n2)) });
@@ -64,9 +62,7 @@ app.get('/matematica/dividir', (req, res) => {
     res.status(200).send({ resultado: dividir(Number(n1), Number(n2)) });
 });
 
-/* =========================
-   OMDB
-========================= */
+
 
 app.get('/omdb/searchbypage', async (req, res) => {
     const { search, p } = req.query;
@@ -104,9 +100,7 @@ app.get('/omdb/getbyomdbid', async (req, res) => {
     });
 });
 
-/* =========================
-   ALUMNOS
-========================= */
+
 
 const alumnosArray = [];
 
@@ -152,9 +146,6 @@ app.delete('/alumnos', (req, res) => {
 
 
 
- //
- // Inicio el Server y lo pongo a escuchar.
- //
 
 
 app.listen(port, () => {
