@@ -113,7 +113,7 @@ app.get('/alumnos', (req, res) => {
 });
 
 app.get('/alumnos/:dni', (req, res) => {
-    const alumno = alumnosArray.find(a => a.dni === req.params.dni);
+    const alumno = alumnosArray.find(item => item.dni === req.params.dni);
 
     if (!alumno) {
         return res.status(404).send("Alumno no encontrado");
@@ -133,7 +133,7 @@ app.post('/alumnos', (req, res) => {
 app.delete('/alumnos', (req, res) => {
     const { dni } = req.body;
 
-    const index = alumnosArray.findIndex(a => a.dni === dni);
+    const index = alumnosArray.findIndex(item => item.dni === dni);
 
     if (index === -1) {
         return res.status(404).send("Alumno no encontrado");
