@@ -1,9 +1,13 @@
 import express  from "express"; // hacer npm i express
 import cors     from "cors";    // hacer npm i cors
 
+import {OMDBSearchByPage, OMDBSearchComplete, OMDBGetByImdbID} from "./modules/omdb-wrapper.js"
 import Alumno from "./models/alumno.js"
 import {sumar, restar, multiplicar, dividir} from "./modules/matematica.js"
-import {OMDBSearchByPage, OMDBSearchComplete, OMDBGetByImdbID} from "./modules/omdb-wrapper.js"
+import ValidacionesHelper from "./modules/validaciones-helper.js"
+import DateTimeHelper from "./modules/datetime-helper.js"
+
+
 
 const app  = express();
 const port = 3000;             
@@ -18,17 +22,19 @@ app.get('/', (req, res) => {
 });
 
 app.get('/saludar/:nombre', (req, res) => {
-    const nombre = req.params.nombre;
+    const nombre = ValidacionesHelper.getStringOrDefault(req.params.nombre, 'Anónimo');
     res.status(200).send(`Hola ${nombre}`);
     console.log("lesan")
 });
 
 
 app.get('/validarfecha/:ano/:mes/:dia', (req, res) => {
-    const { ano, mes, dia } = req.params;
+
+    const ano = ValidacionesHelper.getIntegerOrDefault(req.params.ano, 0);
+    const mes = ValidacionesHelper.getIntegerOrDefault(req.params.mes, 0);
+    const dia = ValidacionesHelper.getIntegerOrDefault(req.params.dia, 0);
 
     const fecha = `${ano}-${mes}-${dia}`;
-
     if (isNaN(Date.parse(fecha))) {
         return res.status(400).send("Fecha inválida");
     }
@@ -38,22 +44,26 @@ app.get('/validarfecha/:ano/:mes/:dia', (req, res) => {
 
 
 app.get('/matematica/sumar', (req, res) => {
-    const { n1, n2 } = req.query;
+   const n1 = ValidacionesHelper.getIntegerOrDefault(req.query.n1, null);
+    const n2 = ValidacionesHelper.getIntegerOrDefault(req.query.n2, null);
     res.status(200).send({ resultado: sumar(Number(n1), Number(n2)) });
 });
 
 app.get('/matematica/restar', (req, res) => {
-    const { n1, n2 } = req.query;
+   const n1 = ValidacionesHelper.getIntegerOrDefault(req.query.n1, null);
+    const n2 = ValidacionesHelper.getIntegerOrDefault(req.query.n2, null);
     res.status(200).send({ resultado: restar(Number(n1), Number(n2)) });
 });
 
 app.get('/matematica/multiplicar', (req, res) => {
-    const { n1, n2 } = req.query;
+    const n1 = ValidacionesHelper.getIntegerOrDefault(req.query.n1, null);
+    const n2 = ValidacionesHelper.getIntegerOrDefault(req.query.n2, null);
     res.status(200).send({ resultado: multiplicar(Number(n1), Number(n2)) });
 });
 
 app.get('/matematica/dividir', (req, res) => {
-    const { n1, n2 } = req.query;
+     const n1 = ValidacionesHelper.getIntegerOrDefault(req.query.n1, null);
+    const n2 = ValidacionesHelper.getIntegerOrDefault(req.query.n2, null);
 
     if (Number(n2) === 0) {
         return res.status(400).send("El divisor no puede ser cero");
@@ -76,7 +86,8 @@ function armarEnvelope(datos) {
 }
 app.get('/omdb/searchbypage', async (req, res) => {
   try {
-    const data = await OMDBSearchByPage(req.query.search, req.query.p);
+    const search = ValidacionesHelper.getStringOrDefault(req.query.search, '');
+    const p = ValidacionesHelper.getIntegerOrDefault(req.query.p, 1);
     res.status(200).send(armarEnvelope(data));
   } catch {
     res.status(500).send(armarEnvelope(null));
@@ -85,7 +96,9 @@ app.get('/omdb/searchbypage', async (req, res) => {
 
 app.get('/omdb/searchcomplete', async (req, res) => {
   try {
-    const data = await OMDBSearchComplete(req.query.search);
+    const username = ValidacionesHelper.getStringOrDefault(req.body.username, '');
+    const dni = ValidacionesHelper.getStringOrDefault(req.body.dni, '');
+    const edad = ValidacionesHelper.getIntegerOrDefault(req.body.edad, 0);
     res.status(200).send(armarEnvelope(data));
   } catch {
     res.status(500).send(armarEnvelope(null));
@@ -144,9 +157,66 @@ app.delete('/alumnos', (req, res) => {
     res.status(200).send("Alumno eliminado");
 });
 
+app.get('/fechas/isDate', (req, res) => {
+  const fecha = ValidacionesHelper.getDateOrDefault(req.query.fecha, null);
+
+  if (!DateTimeHelper.isDate(fecha)) {
+    return res.status(400).send({ valido: false });
+  }
+
+  res.status(200).send({ valido: true });
+});
+
+app.get('/fechas/getEdadActual', (req, res) => {
+  const fechaNac = ValidacionesHelper.getDateOrDefault(req.query.fechaNacimiento, null);
+
+  if (!DateTimeHelper.isDate(fechaNac)) {
+    return res.status(400).send('Fecha inválida');
+  }
+
+  res.status(200).send({
+    edad: DateTimeHelper.getEdadActual(fechaNac)
+  });
+});
+
+app.get('/fechas/getDiasHastaMiCumple', (req, res) => {
+  const fechaNac = ValidacionesHelper.getDateOrDefault(req.query.fechaNacimiento, null);
+
+  if (!DateTimeHelper.isDate(fechaNac)) {
+    return res.status(400).send('Fecha inválida');
+  }
+
+  res.status(200).send({
+    diasRestantes: DateTimeHelper.getDiasHastaMiCumple(fechaNac)
+  });
+});
 
 
+app.get('/fechas/getDiaTexto', (req, res) => {
+  const fecha = ValidacionesHelper.getDateOrDefault(req.query.fecha, null);
+  const abr = ValidacionesHelper.getBooleanOrDefault(req.query.abr, false);
 
+  if (!DateTimeHelper.isDate(fecha)) {
+    return res.status(400).send('Fecha inválida');
+  }
+
+  res.status(200).send({
+    dia: DateTimeHelper.getDiaTexto(fecha, abr)
+  });
+});
+
+app.get('/fechas/getMesTexto', (req, res) => {
+  const fecha = ValidacionesHelper.getDateOrDefault(req.query.fecha, null);
+  const abr = ValidacionesHelper.getBooleanOrDefault(req.query.abr, false);
+
+  if (!DateTimeHelper.isDate(fecha)) {
+    return res.status(400).send('Fecha inválida');
+  }
+
+  res.status(200).send({
+    mes: DateTimeHelper.getMesTexto(fecha, abr)
+  });
+});
 
 app.listen(port, () => {
     console.log(`Servidor corriendo en http://localhost:${port}`);
