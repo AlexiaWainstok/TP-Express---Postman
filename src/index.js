@@ -27,26 +27,36 @@ app.get('/saludar/:nombre', (req, res) => {
     console.log("lesan")
 });
 
-
 app.get('/validarfecha/:ano/:mes/:dia', (req, res) => {
 
-    const ano = ValidacionesHelper.getIntegerOrDefault(req.params.ano, 0);
-    const mes = ValidacionesHelper.getIntegerOrDefault(req.params.mes, 0);
-    const dia = ValidacionesHelper.getIntegerOrDefault(req.params.dia, 0);
+  const ano = ValidacionesHelper.getIntegerOrDefault(req.params.ano, 0);
+  const mes = ValidacionesHelper.getIntegerOrDefault(req.params.mes, 0);
+  const dia = ValidacionesHelper.getIntegerOrDefault(req.params.dia, 0);
 
-    const fecha = `${ano}-${mes}-${dia}`;
-    if (isNaN(Date.parse(fecha))) {
-        return res.status(400).send("Fecha inválida");
-    }
 
-    res.status(200).send("Fecha válida");
+  if (ano === 0 || mes === 0 || dia === 0) {
+    return res.status(400).send("Parámetros inválidos");
+  }
+
+  const fecha = new Date(ano, mes - 1, dia);
+
+  if (isNaN(fecha.getTime())) {
+    return res.status(400).send("Fecha inválida");
+  }
+
+  res.status(200).send("Fecha válida");
 });
 
 
 app.get('/matematica/sumar', (req, res) => {
-   const n1 = ValidacionesHelper.getIntegerOrDefault(req.query.n1, null);
-    const n2 = ValidacionesHelper.getIntegerOrDefault(req.query.n2, null);
-    res.status(200).send({ resultado: sumar(Number(n1), Number(n2)) });
+  const n1 = ValidacionesHelper.getIntegerOrDefault(req.query.n1, null);
+  const n2 = ValidacionesHelper.getIntegerOrDefault(req.query.n2, null);
+
+  if (n1 === null || n2 === null) {
+    return res.status(400).send('n1 y n2 deben ser números enteros');
+  }
+
+  res.status(200).send({ resultado: sumar(n1, n2) });
 });
 
 app.get('/matematica/restar', (req, res) => {
@@ -87,7 +97,10 @@ function armarEnvelope(datos) {
 app.get('/omdb/searchbypage', async (req, res) => {
   try {
     const search = ValidacionesHelper.getStringOrDefault(req.query.search, '');
-    const p = ValidacionesHelper.getIntegerOrDefault(req.query.p, 1);
+    const p      = ValidacionesHelper.getIntegerOrDefault(req.query.p, 1);
+
+    const data = await OMDBSearchByPage(search, p);
+
     res.status(200).send(armarEnvelope(data));
   } catch {
     res.status(500).send(armarEnvelope(null));
@@ -96,9 +109,14 @@ app.get('/omdb/searchbypage', async (req, res) => {
 
 app.get('/omdb/searchcomplete', async (req, res) => {
   try {
-    const username = ValidacionesHelper.getStringOrDefault(req.body.username, '');
-    const dni = ValidacionesHelper.getStringOrDefault(req.body.dni, '');
-    const edad = ValidacionesHelper.getIntegerOrDefault(req.body.edad, 0);
+    const search = ValidacionesHelper.getStringOrDefault(req.query.search, '');
+
+    if (search === '') {
+      return res.status(400).send('search es obligatorio');
+    }
+
+    const data = await OMDBSearchComplete(search);
+
     res.status(200).send(armarEnvelope(data));
   } catch {
     res.status(500).send(armarEnvelope(null));
@@ -107,7 +125,14 @@ app.get('/omdb/searchcomplete', async (req, res) => {
 
 app.get('/omdb/getbyomdbid', async (req, res) => {
   try {
-    const data = await OMDBGetByImdbID(req.query.imdbID);
+    const imdbID = ValidacionesHelper.getStringOrDefault(req.query.imdbID, '');
+
+    if (imdbID === '') {
+      return res.status(400).send('imdbID es obligatorio');
+    }
+
+    const data = await OMDBGetByImdbID(imdbID);
+
     res.status(200).send(armarEnvelope(data));
   } catch {
     res.status(500).send(armarEnvelope(null));
@@ -126,35 +151,44 @@ app.get('/alumnos', (req, res) => {
 });
 
 app.get('/alumnos/:dni', (req, res) => {
-    const alumno = alumnosArray.find(item => item.dni === req.params.dni);
+  const dni = ValidacionesHelper.getStringOrDefault(req.params.dni, '');
 
-    if (!alumno) {
-        return res.status(404).send("Alumno no encontrado");
-    }
+  const alumno = alumnosArray.find(item => item.dni === dni);
 
-    res.status(200).send(alumno);
+  if (!alumno) {
+    return res.status(404).send("Alumno no encontrado");
+  }
+
+  res.status(200).send(alumno);
 });
 
 app.post('/alumnos', (req, res) => {
-    const { username, dni, edad } = req.body;
+  const username = ValidacionesHelper.getStringOrDefault(req.body.username, '');
+  const dni      = ValidacionesHelper.getStringOrDefault(req.body.dni, '');
+  const edad     = ValidacionesHelper.getIntegerOrDefault(req.body.edad, 0);
 
-    alumnosArray.push(new Alumno(username, dni, edad));
 
-    res.status(201).send("Alumno agregado");
+  if (username === '' || dni === '' || edad <= 0) {
+    return res.status(400).send('username, dni y edad son obligatorios');
+  }
+
+  alumnosArray.push(new Alumno(username, dni, edad));
+
+  res.status(201).send("Alumno agregado");
 });
 
 app.delete('/alumnos', (req, res) => {
-    const { dni } = req.body;
+  const dni = ValidacionesHelper.getStringOrDefault(req.body.dni, '');
 
-    const index = alumnosArray.findIndex(item => item.dni === dni);
+  const index = alumnosArray.findIndex(item => item.dni === dni);
 
-    if (index === -1) {
-        return res.status(404).send("Alumno no encontrado");
-    }
+  if (index === -1) {
+    return res.status(404).send("Alumno no encontrado");
+  }
 
-    alumnosArray.splice(index, 1);
+  alumnosArray.splice(index, 1);
 
-    res.status(200).send("Alumno eliminado");
+  res.status(200).send("Alumno eliminado");
 });
 
 app.get('/fechas/isDate', (req, res) => {
