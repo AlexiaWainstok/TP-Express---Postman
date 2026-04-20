@@ -7,8 +7,6 @@ import {sumar, restar, multiplicar, dividir} from "./modules/matematica.js"
 import ValidacionesHelper from "./modules/validaciones-helper.js"
 import DateTimeHelper from "./modules/datetime-helper.js"
 
-
-
 const app  = express();
 const port = 3000;             
 
@@ -194,11 +192,9 @@ app.delete('/alumnos', (req, res) => {
 app.get('/fechas/isDate', (req, res) => {
   const fecha = ValidacionesHelper.getDateOrDefault(req.query.fecha, null);
 
-  if (!DateTimeHelper.isDate(fecha)) {
-    return res.status(400).send({ valido: false });
-  }
+  const esValida = DateTimeHelper.isDate(fecha);
 
-  res.status(200).send({ valido: true });
+  res.status(200).send({ valido: esValida });
 });
 
 app.get('/fechas/getEdadActual', (req, res) => {
